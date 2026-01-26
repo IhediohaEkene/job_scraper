@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Reddit Job Feed</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f8f1e7;
+        --bg-2: #f0e2cf;
+        --ink: #1e1a16;
+        --muted: #5a5148;
+        --accent: #d86b3e;
+        --accent-2: #1b5f63;
+        --card: #fff9f2;
+        --stroke: rgba(30, 26, 22, 0.12);
+        --shadow: 0 24px 60px rgba(30, 26, 22, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 20% 20%, rgba(216, 107, 62, 0.18), transparent 52%),
+          radial-gradient(circle at 80% 0%, rgba(27, 95, 99, 0.2), transparent 55%),
+          linear-gradient(120deg, var(--bg), var(--bg-2));
+      }
+
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem 4rem;
+      }
+
+      .hero {
+        background: rgba(255, 249, 242, 0.8);
+        border: 1px solid var(--stroke);
+        border-radius: 28px;
+        padding: 2.5rem;
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(6px);
+        animation: float-in 600ms ease forwards;
+      }
+
+      .hero__badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-radius: 999px;
+        padding: 0.35rem 0.9rem;
+        background: rgba(27, 95, 99, 0.12);
+        color: var(--accent-2);
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        font-family: "Fraunces", "Times New Roman", serif;
+        font-size: clamp(2.2rem, 4vw, 3.4rem);
+        margin: 0.8rem 0 0.6rem;
+      }
+
+      .subtitle {
+        color: var(--muted);
+        margin: 0 0 2rem;
+        font-size: 1.05rem;
+        max-width: 40rem;
+      }
+
+      .hero__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        padding: 0.75rem 1rem;
+        border-radius: 16px;
+        background: rgba(30, 26, 22, 0.06);
+        min-width: 120px;
+      }
+
+      .stat__label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+
+      .stat__value {
+        font-size: 1.2rem;
+        font-weight: 600;
+      }
+
+      .btn {
+        border: none;
+        border-radius: 999px;
+        padding: 0.75rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        transition: transform 150ms ease, box-shadow 150ms ease;
+        box-shadow: 0 12px 24px rgba(216, 107, 62, 0.3);
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 28px rgba(216, 107, 62, 0.35);
+      }
+
+      .controls {
+        margin-top: 2.5rem;
+        display: grid;
+        grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(160px, 1fr));
+        gap: 1rem;
+      }
+
+      .control {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      input,
+      select {
+        padding: 0.7rem 0.9rem;
+        border-radius: 12px;
+        border: 1px solid var(--stroke);
+        background: rgba(255, 255, 255, 0.8);
+        font-size: 0.95rem;
+        color: var(--ink);
+        font-family: inherit;
+      }
+
+      .jobs {
+        margin-top: 2rem;
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .job-card {
+        background: var(--card);
+        border: 1px solid var(--stroke);
+        border-radius: 22px;
+        padding: 1.5rem 1.6rem;
+        display: grid;
+        gap: 0.9rem;
+        box-shadow: 0 14px 30px rgba(30, 26, 22, 0.08);
+        opacity: 0;
+        transform: translateY(12px);
+        animation: card-in 420ms ease forwards;
+      }
+
+      .job-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        align-items: center;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.65rem;
+        border-radius: 999px;
+        background: rgba(27, 95, 99, 0.12);
+        color: var(--accent-2);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .body {
+        font-size: 0.95rem;
+        color: var(--ink);
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .phone {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--accent-2);
+      }
+
+      .actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      a {
+        color: var(--accent-2);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .empty {
+        color: var(--muted);
+        font-size: 1rem;
+        padding: 2rem 0 1rem;
+      }
+
+      @keyframes float-in {
+        from {
+          opacity: 0;
+          transform: translateY(18px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes card-in {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 900px) {
+        .hero {
+          padding: 2rem;
+        }
+
+        .controls {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <div class="hero__badge">Live feed</div>
+        <h1>Reddit Job Pulse</h1>
+        <p class="subtitle">
+          Curated from active job subreddits and arranged in a clean, searchable feed.
+        </p>
+        <div class="hero__meta">
+          <div class="stat">
+            <span class="stat__label">Jobs</span>
+            <span id="jobCount" class="stat__value">0</span>
+          </div>
+          <div class="stat">
+            <span class="stat__label">Subreddits</span>
+            <span id="subCount" class="stat__value">0</span>
+          </div>
+          <button id="refreshBtn" class="btn">Refresh feed</button>
+        </div>
+      </header>
+
+      <section class="controls">
+        <label class="control">
+          Search
+          <input id="searchInput" type="search" placeholder="Role, keyword, or company" />
+        </label>
+        <label class="control">
+          Subreddit
+          <select id="subFilter">
+            <option value="">All</option>
+          </select>
+        </label>
+        <label class="control">
+          Sort
+          <select id="sortSelect">
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </label>
+      </section>
+
+      <div id="jobs" class="jobs"></div>
+      <div id="emptyState" class="empty" style="display: none;">
+        No jobs yet. Run the scraper, then refresh the feed.
+      </div>
+    </div>
+
+    <script>
+      const jobsContainer = document.getElementById('jobs');
+      const emptyState = document.getElementById('emptyState');
+      const refreshBtn = document.getElementById('refreshBtn');
+      const subFilter = document.getElementById('subFilter');
+      const searchInput = document.getElementById('searchInput');
+      const sortSelect = document.getElementById('sortSelect');
+      const jobCount = document.getElementById('jobCount');
+      const subCount = document.getElementById('subCount');
+
+      let allJobs = [];
+
+      async function fetchJobs() {
+        const res = await fetch('/api/jobs');
+        const data = await res.json();
+        allJobs = Array.isArray(data) ? data : [];
+        populateFilter();
+        renderJobs();
+      }
+
+      function populateFilter() {
+        const subs = [...new Set(allJobs.map((j) => j.subreddit).filter(Boolean))].sort();
+        subFilter.innerHTML =
+          '<option value="">All</option>' +
+          subs.map((s) => `<option value="${s}">${s}</option>`).join('');
+        subCount.textContent = String(subs.length);
+      }
+
+      function normalize(text) {
+        return (text || '').toLowerCase();
+      }
+
+      function getDomain(url) {
+        if (!url) return '';
+        try {
+          return new URL(url).hostname.replace(/^www\./, '');
+        } catch (err) {
+          return '';
+        }
+      }
+
+      function renderJobs() {
+        const filterSub = subFilter.value;
+        const query = normalize(searchInput.value);
+        const sortOrder = sortSelect.value;
+        let jobs = allJobs.slice();
+
+        if (filterSub) {
+          jobs = jobs.filter((j) => j.subreddit === filterSub);
+        }
+
+        if (query) {
+          jobs = jobs.filter((j) => {
+            return (
+              normalize(j.title).includes(query) ||
+              normalize(j.body).includes(query)
+            );
+          });
+        }
+
+        jobs.sort((a, b) => {
+          const delta = new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+          return sortOrder === 'oldest' ? delta : -delta;
+        });
+
+        jobCount.textContent = String(jobs.length);
+        jobsContainer.innerHTML = '';
+
+        if (jobs.length === 0) {
+          emptyState.style.display = 'block';
+          return;
+        } else {
+          emptyState.style.display = 'none';
+        }
+
+        jobs.forEach((job, index) => {
+          const card = document.createElement('div');
+          card.className = 'job-card';
+          card.style.animationDelay = `${index * 40}ms`;
+
+          const title = document.createElement('div');
+          title.className = 'job-title';
+          title.textContent = job.title || '(No title)';
+
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          const created = job.createdAt
+            ? new Date(job.createdAt).toLocaleString()
+            : '';
+          const subreddit = document.createElement('span');
+          subreddit.className = 'pill';
+          subreddit.textContent = job.subreddit || 'unknown';
+
+          const source = document.createElement('span');
+          source.textContent = getDomain(job.url) || 'reddit.com';
+
+          const time = document.createElement('span');
+          time.textContent = created;
+
+          meta.appendChild(subreddit);
+          meta.appendChild(source);
+          if (created) meta.appendChild(time);
+
+          const body = document.createElement('div');
+          body.className = 'body';
+          const snippet = (job.body || '').trim().slice(0, 320);
+          body.textContent = snippet ? `${snippet}${snippet.length >= 320 ? '...' : ''}` : '';
+
+          const phone = document.createElement('div');
+          phone.className = 'phone';
+          phone.textContent = job.phone ? `Phone: ${job.phone}` : '';
+
+          const actions = document.createElement('div');
+          actions.className = 'actions';
+
+          const link = document.createElement('a');
+          link.href = job.permalink || job.url || '#';
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = 'View on Reddit';
+
+          actions.appendChild(link);
+
+          card.appendChild(title);
+          card.appendChild(meta);
+          if (job.phone) card.appendChild(phone);
+          if (job.body) card.appendChild(body);
+          card.appendChild(actions);
+
+          jobsContainer.appendChild(card);
+        });
+      }
+
+      refreshBtn.addEventListener('click', fetchJobs);
+      subFilter.addEventListener('change', renderJobs);
+      sortSelect.addEventListener('change', renderJobs);
+      searchInput.addEventListener('input', renderJobs);
+
+      fetchJobs();
+    </script>
+  </body>
+</html>

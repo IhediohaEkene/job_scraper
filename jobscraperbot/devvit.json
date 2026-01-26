@@ -1,0 +1,60 @@
+{
+  "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
+  "name": "jobscraperbot",
+  "post": {
+    "dir": "dist/client",
+    "entrypoints": {
+      "default": {
+        "inline": true,
+        "entry": "splash/splash.html"
+      },
+      "game": {
+        "entry": "game/game.html"
+      }
+    }
+  },
+  "server": {
+    "dir": "dist/server",
+    "entry": "index.cjs"
+  },
+  "media": {
+    "dir": "assets"
+  },
+  "menu": {
+    "items": [
+      {
+        "label": "Create a new post",
+        "description": "jobscraperbot",
+        "location": "subreddit",
+        "forUserType": "moderator",
+        "endpoint": "/internal/menu/post-create"
+      }
+    ]
+  },
+  "permissions": {
+    "http": {
+      "enable": true,
+      "domains": ["localhost", "127.0.0.1"]
+    }
+  },
+  "triggers": {
+    "onAppInstall": "/internal/on-app-install"
+  },
+  "settings": {
+    "subreddit": {
+      "target_subreddit": {
+        "type": "string",
+        "label": "Target Subreddit",
+        "defaultValue": "jobscraperbot_dev"
+      },
+      "job_api_url": {
+        "type": "string",
+        "label": "Job API URL",
+        "defaultValue": "http://localhost:5000/api/jobs"
+      }
+    }
+  },
+  "dev": {
+    "subreddit": "jobscraperbot_dev"
+  }
+}

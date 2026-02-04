@@ -23,9 +23,15 @@ async function init() {
       permalink TEXT NOT NULL,
       url TEXT NOT NULL,
       phone TEXT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      source TEXT DEFAULT 'reddit',
+      source_id TEXT
     );
   `);
+  
+  // Add columns if they don't exist (for existing databases)
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'reddit'`);
+  await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS source_id TEXT`);
 }
 
 init()

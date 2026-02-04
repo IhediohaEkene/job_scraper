@@ -44,11 +44,23 @@ function toIsoDate(value) {
     : new Date().toISOString();
 }
 
-async function insertJob({ title, body, subreddit, permalink, url, phone, createdAt }) {
+// Clean up jobs older than 7 days
+async function cleanupOldJobs() {
+  try {
+    const result = await pool.query(
+      `DELETE FROM jobs WHERE created_at < NOW() - INTERVAL '7 days'`
+    );
+    console.log(`🧹 Cleaned up ${result.rowCount} jobs older than 7 days`);
+  } catch (err) {
+    console.error('Error cleaning up old jobs:', err);
+  }
+}
+
+async function insertJob({ title, body, subreddit, permalink, url, phone, createdAt, source, source_id }) {
   const result = await pool.query(
-    `INSERT INTO jobs (title, body, subreddit, permalink, url, phone, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING id, title, body, subreddit, permalink, url, phone, created_at`,
+    `INSERT INTO jobs (title, body, subreddit, permalink, url, phone, created_at, source, source_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+     RETURNING id, title, body, subreddit, permalink, url, phone, created_at, source, source_id`,
     [
       title || '',
       body || '',
@@ -57,6 +69,8 @@ async function insertJob({ title, body, subreddit, permalink, url, phone, create
       url || '',
       phone || null,
       toIsoDate(createdAt),
+      source || 'reddit',
+      source_id || null,
     ]
   );
 
@@ -70,6 +84,8 @@ async function insertJob({ title, body, subreddit, permalink, url, phone, create
     url: row.url,
     phone: row.phone,
     createdAt: row.created_at,
+    source: row.source,
+    source_id: row.source_id,
   };
 }
 
@@ -84,6 +100,8 @@ app.post('/api/jobs', async (req, res) => {
       url: req.body.url,
       phone: req.body.phone,
       createdAt: req.body.createdAt,
+      source: req.body.source,
+      source_id: req.body.source_id,
     });
     res.json({ success: true, job });
   } catch (err) {
@@ -134,9 +152,6 @@ app.listen(PORT, () => {
 });
 
 const START_REDDIT_SCRAPER = process.env.START_REDDIT_SCRAPER === 'true';
-const REDDIT_SCRAPE_INTERVAL_MINUTES = Number(
-  process.env.REDDIT_SCRAPE_INTERVAL_MINUTES
-) || 30;
 
 if (START_REDDIT_SCRAPER) {
   let isScraping = false;
@@ -145,6 +160,8 @@ if (START_REDDIT_SCRAPER) {
     if (isScraping) return;
     isScraping = true;
     try {
+      console.log('\n📅 Starting scrape cycle...');
+      await cleanupOldJobs();
       await runScraper({
         onJob: async (job) => {
           await insertJob(job);
@@ -157,18 +174,61 @@ if (START_REDDIT_SCRAPER) {
     }
   };
 
+  console.log('🚀 Reddit scraper enabled - running every hour');
   scrapeOnce();
-  setInterval(scrapeOnce, REDDIT_SCRAPE_INTERVAL_MINUTES * 60 * 1000);
+  setInterval(scrapeOnce, 60 * 60 * 1000); // 1 hour = 3600000 ms
 }
 
 const START_TELEGRAM_SCRAPER = process.env.START_TELEGRAM_SCRAPER === 'true';
 
 if (START_TELEGRAM_SCRAPER) {
-  runTelegramScraper({
-    onJob: async (job) => {
-      await insertJob(job);
-    },
-  }).catch((err) => {
-    console.error('Telegram scraper failed:', err);
-  });
+  let isScrapingTelegram = false;
+
+  const telegramScrapeOnce = async () => {
+    if (isScrapingTelegram) return;
+    isScrapingTelegram = true;
+    try {
+      console.log('\n📅 Starting Telegram scrape cycle...');
+      await cleanupOldJobs();
+      await runTelegramScraper({
+        onJob: async (job) => {
+          await insertJob(job);
+        },
+      });
+    } catch (err) {
+      console.error('Telegram scraper error:', err);
+    } finally {
+      isScrapingTelegram = false;
+    }
+  };
+
+  console.log('🚀 Telegram scraper enabled - running every hour');
+  telegramScrapeOnce();
+  setInterval(telegramScrapeOnce, 60 * 60 * 1000); // 1 hour
+}
+
+// Facebook Scraper (if enabled)
+const START_FACEBOOK_SCRAPER = process.env.START_FACEBOOK_SCRAPER === 'true';
+
+if (START_FACEBOOK_SCRAPER) {
+  const { runFacebookScraper } = require('./facebook-scraper');
+  let isScrapingFacebook = false;
+
+  const facebookScrapeOnce = async () => {
+    if (isScrapingFacebook) return;
+    isScrapingFacebook = true;
+    try {
+      console.log('\n📅 Starting Facebook scrape cycle...');
+      await cleanupOldJobs();
+      await runFacebookScraper('http://localhost:3000/api/jobs');
+    } catch (err) {
+      console.error('Facebook scraper error:', err);
+    } finally {
+      isScrapingFacebook = false;
+    }
+  };
+
+  console.log('🚀 Facebook scraper enabled - running every hour');
+  facebookScrapeOnce();
+  setInterval(facebookScrapeOnce, 60 * 60 * 1000); // 1 hour
 }

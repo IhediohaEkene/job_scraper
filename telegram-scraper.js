@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const { TelegramClient } = require('telegram');
 const { StringSession } = require('telegram/sessions');
 const fs = require('fs/promises');
@@ -29,6 +31,120 @@ function extractTitle(message) {
 function extractPhone(message) {
   const match = message.match(/\+?\d[\d\s\-]{7,}/);
   return match ? match[0] : null;
+}
+
+const JOB_STRONG_PATTERNS = [
+  /\bwe(?:'re| are) hiring\b/i,
+  /\bnow hiring\b/i,
+  /\bjob opening\b/i,
+  /\bvacanc(?:y|ies)\b/i,
+  /\bposition available\b/i,
+  /\brole available\b/i,
+  /\bapply\b/i,
+  /\brequirements?\b/i,
+  /\bresponsibilities\b/i,
+  /\bqualifications\b/i,
+  /\bsalary\b/i,
+  /\bcompensation\b/i,
+  /\bbenefits?\b/i,
+];
+
+const JOB_WEAK_PATTERNS = [
+  /\bfull[-\s]?time\b/i,
+  /\bpart[-\s]?time\b/i,
+  /\bcontract\b/i,
+  /\bfreelance\b/i,
+  /\bintern(?:ship)?\b/i,
+  /\bremote\b/i,
+  /\bonsite\b/i,
+  /\bhybrid\b/i,
+  /\bpay\b/i,
+  /\bper hour\b/i,
+  /\bhourly\b/i,
+];
+
+const NON_JOB_STRONG_PATTERNS = [
+  /\blooking for (?:work|a job|job opportunities?)\b/i,
+  /\bseeking (?:work|a job)\b/i,
+  /\bopen to work\b/i,
+  /\bhire me\b/i,
+  /\bmy resume\b/i,
+  /\bmy cv\b/i,
+  /\bmy portfolio\b/i,
+];
+
+const NON_JOB_WEAK_PATTERNS = [
+  /\bi am a\b/i,
+  /\bi'm a\b/i,
+  /\bi’m a\b/i,
+  /\bavailable for\b/i,
+  /\bfreelance services\b/i,
+  /\bconsulting\b/i,
+  /\bpromotion\b/i,
+  /\badvert(?:ise|isement)?\b/i,
+  /\bfor sale\b/i,
+  /\bwebinar\b/i,
+  /\bcourse\b/i,
+  /\btraining\b/i,
+];
+
+function isLikelyEnglish(text) {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  if (words < 5) return false;
+
+  const asciiLetters = (text.match(/[A-Za-z]/g) || []).length;
+  const nonLatinLetters = (text.match(
+    /[\u0400-\u04FF\u0600-\u06FF\u0900-\u097F\u0E00-\u0E7F\u1100-\u11FF\u3040-\u30FF\u4E00-\u9FFF\uAC00-\uD7AF]/g
+  ) || []).length;
+
+  if (asciiLetters < 15 && nonLatinLetters > 0) return false;
+  if (nonLatinLetters > asciiLetters * 0.5) return false;
+
+  return asciiLetters > 0;
+}
+
+function isLikelyJobPost(text) {
+  const normalized = text.toLowerCase();
+  const wordCount = normalized.split(/\s+/).filter(Boolean).length;
+  if (wordCount < 6) return false;
+
+  let score = 0;
+  let hasStrongJobSignal = false;
+
+  for (const pattern of JOB_STRONG_PATTERNS) {
+    if (pattern.test(normalized)) {
+      score += 2;
+      hasStrongJobSignal = true;
+    }
+  }
+
+  for (const pattern of JOB_WEAK_PATTERNS) {
+    if (pattern.test(normalized)) {
+      score += 1;
+    }
+  }
+
+  for (const pattern of NON_JOB_STRONG_PATTERNS) {
+    if (pattern.test(normalized)) {
+      score -= 3;
+    }
+  }
+
+  for (const pattern of NON_JOB_WEAK_PATTERNS) {
+    if (pattern.test(normalized)) {
+      score -= 1;
+    }
+  }
+
+  if (hasStrongJobSignal && score >= 1) return true;
+  return score >= 3;
+}
+
+function isRecent(dateValue, maxAgeHours) {
+  if (!maxAgeHours) return true;
+  const timestamp = dateValue ? new Date(dateValue).getTime() : Date.now();
+  if (Number.isNaN(timestamp)) return true;
+  return Date.now() - timestamp <= maxAgeHours * 60 * 60 * 1000;
 }
 
 function buildPermalink(entity, messageId) {
@@ -77,7 +193,7 @@ async function sendJob(payload, { apiUrl, onJob }) {
   }
 }
 
-async function scrapeOnce({ client, targets, limit, apiUrl, onJob }) {
+async function scrapeOnce({ client, targets, limit, apiUrl, onJob, maxAgeHours }) {
   const state = await loadState();
 
   for (const target of targets) {
@@ -93,6 +209,9 @@ async function scrapeOnce({ client, targets, limit, apiUrl, onJob }) {
       newestId = Math.max(newestId, msg.id);
       const text = msg.message.trim();
       if (!text) continue;
+      if (!isRecent(msg.date, maxAgeHours)) continue;
+      if (!isLikelyEnglish(text)) continue;
+      if (!isLikelyJobPost(text)) continue;
 
       const permalink = buildPermalink(entity, msg.id);
       const subredditLabel = entity.username || entity.title || String(entity.id);
@@ -130,10 +249,13 @@ function resolveConfig(options = {}) {
     .map((target) => normalizeTarget(target))
     .filter(Boolean);
   const limit = Number(options.limit ?? process.env.TELEGRAM_LIMIT ?? 50);
-  const pollMs = Number(options.pollMs ?? process.env.TELEGRAM_POLL_MS ?? 60000);
+  const pollMs = Number(options.pollMs ?? process.env.TELEGRAM_POLL_MS ?? 1800000);
   const runOnce = options.runOnce ?? process.env.TELEGRAM_ONCE === '1';
   const apiUrl = options.apiUrl ?? process.env.JOB_API_URL ?? '';
   const onJob = options.onJob;
+  const maxAgeHours = Number(
+    options.maxAgeHours ?? process.env.TELEGRAM_MAX_AGE_HOURS ?? 0
+  );
 
   return {
     apiId,
@@ -145,6 +267,7 @@ function resolveConfig(options = {}) {
     runOnce,
     apiUrl,
     onJob,
+    maxAgeHours,
   };
 }
 
@@ -191,6 +314,7 @@ async function runTelegramScraper(options = {}) {
     limit: config.limit,
     apiUrl: config.apiUrl,
     onJob: config.onJob,
+    maxAgeHours: config.maxAgeHours,
   });
   if (config.runOnce) {
     await client.disconnect();
@@ -204,6 +328,7 @@ async function runTelegramScraper(options = {}) {
       limit: config.limit,
       apiUrl: config.apiUrl,
       onJob: config.onJob,
+      maxAgeHours: config.maxAgeHours,
     }).catch((err) => console.error('Telegram scrape error:', err));
   }, config.pollMs);
 }
@@ -215,4 +340,11 @@ if (require.main === module) {
   });
 }
 
-module.exports = { runTelegramScraper, extractPhone, extractTitle, normalizeTarget };
+module.exports = {
+  runTelegramScraper,
+  extractPhone,
+  extractTitle,
+  normalizeTarget,
+  isLikelyEnglish,
+  isLikelyJobPost,
+};

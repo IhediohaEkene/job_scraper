@@ -2,360 +2,410 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Reddit Job Feed</title>
+    <title>Job Aggregator - Multi-Source Job Feed</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       :root {
-        color-scheme: light;
-        --bg: #f8f1e7;
-        --bg-2: #f0e2cf;
-        --ink: #1e1a16;
-        --muted: #5a5148;
-        --accent: #d86b3e;
-        --accent-2: #1b5f63;
-        --card: #fff9f2;
-        --stroke: rgba(30, 26, 22, 0.12);
-        --shadow: 0 24px 60px rgba(30, 26, 22, 0.12);
+        --primary: #0a0e27;
+        --secondary: #1f2937;
+        --accent: #3b82f6;
+        --accent-light: #60a5fa;
+        --bg: #ffffff;
+        --bg-alt: #f9fafb;
+        --text-primary: #111827;
+        --text-secondary: #6b7280;
+        --border: #e5e7eb;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08);
       }
 
       * {
+        margin: 0;
+        padding: 0;
         box-sizing: border-box;
       }
 
       body {
-        margin: 0;
-        min-height: 100vh;
-        font-family: "Space Grotesk", system-ui, sans-serif;
-        color: var(--ink);
-        background:
-          radial-gradient(circle at 20% 20%, rgba(216, 107, 62, 0.18), transparent 52%),
-          radial-gradient(circle at 80% 0%, rgba(27, 95, 99, 0.2), transparent 55%),
-          linear-gradient(120deg, var(--bg), var(--bg-2));
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background-color: var(--bg-alt);
+        color: var(--text-primary);
+        line-height: 1.6;
       }
 
       .page {
-        max-width: 1100px;
+        max-width: 1200px;
         margin: 0 auto;
-        padding: 3rem 1.5rem 4rem;
+        padding: 2rem 1.5rem;
       }
 
-      .hero {
-        background: rgba(255, 249, 242, 0.8);
-        border: 1px solid var(--stroke);
-        border-radius: 28px;
-        padding: 2.5rem;
+      header {
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 1.5rem 0;
+        margin-bottom: 2rem;
         box-shadow: var(--shadow);
-        backdrop-filter: blur(6px);
-        animation: float-in 600ms ease forwards;
       }
 
-      .hero__badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        border-radius: 999px;
-        padding: 0.35rem 0.9rem;
-        background: rgba(27, 95, 99, 0.12);
-        color: var(--accent-2);
-        font-size: 0.85rem;
-        font-weight: 600;
-        letter-spacing: 0.02em;
-        text-transform: uppercase;
+      .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
       }
 
       h1 {
-        font-family: "Fraunces", "Times New Roman", serif;
-        font-size: clamp(2.2rem, 4vw, 3.4rem);
-        margin: 0.8rem 0 0.6rem;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
       }
 
       .subtitle {
-        color: var(--muted);
-        margin: 0 0 2rem;
-        font-size: 1.05rem;
-        max-width: 40rem;
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
       }
 
-      .hero__meta {
+      .header-stats {
         display: flex;
+        gap: 2rem;
         flex-wrap: wrap;
-        gap: 1rem;
-        align-items: center;
       }
 
       .stat {
         display: flex;
-        flex-direction: column;
-        gap: 0.3rem;
-        padding: 0.75rem 1rem;
-        border-radius: 16px;
-        background: rgba(30, 26, 22, 0.06);
-        min-width: 120px;
+        align-items: center;
+        gap: 0.75rem;
       }
 
-      .stat__label {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--muted);
+      .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--accent);
       }
 
-      .stat__value {
-        font-size: 1.2rem;
-        font-weight: 600;
-      }
-
-      .btn {
-        border: none;
-        border-radius: 999px;
-        padding: 0.75rem 1.5rem;
-        font-size: 0.95rem;
-        font-weight: 600;
-        background: var(--accent);
-        color: #fff;
-        cursor: pointer;
-        transition: transform 150ms ease, box-shadow 150ms ease;
-        box-shadow: 0 12px 24px rgba(216, 107, 62, 0.3);
-      }
-
-      .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 16px 28px rgba(216, 107, 62, 0.35);
+      .stat-label {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
       }
 
       .controls {
-        margin-top: 2.5rem;
         display: grid;
-        grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(160px, 1fr));
+        grid-template-columns: 2fr 1fr 1fr;
         gap: 1rem;
+        margin-bottom: 2rem;
       }
 
       .control {
         display: flex;
         flex-direction: column;
-        gap: 0.4rem;
-        font-size: 0.85rem;
-        color: var(--muted);
+        gap: 0.5rem;
+      }
+
+      .control label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
       }
 
       input,
       select {
-        padding: 0.7rem 0.9rem;
-        border-radius: 12px;
-        border: 1px solid var(--stroke);
-        background: rgba(255, 255, 255, 0.8);
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
         font-size: 0.95rem;
-        color: var(--ink);
         font-family: inherit;
+        background-color: var(--bg);
+        color: var(--text-primary);
+        transition: all 0.2s;
+      }
+
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
       }
 
       .jobs {
-        margin-top: 2rem;
         display: grid;
-        gap: 1.5rem;
+        gap: 1rem;
       }
 
       .job-card {
-        background: var(--card);
-        border: 1px solid var(--stroke);
-        border-radius: 22px;
-        padding: 1.5rem 1.6rem;
-        display: grid;
-        gap: 0.9rem;
-        box-shadow: 0 14px 30px rgba(30, 26, 22, 0.08);
-        opacity: 0;
-        transform: translateY(12px);
-        animation: card-in 420ms ease forwards;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.2s;
+        box-shadow: var(--shadow);
+        display: flex;
+        gap: 1rem;
+      }
+
+      .job-source-badge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background-color: var(--accent);
+        color: white;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        min-width: 80px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+
+      .job-source-badge.telegram {
+        background: linear-gradient(135deg, #0088cc, #0077b5);
+      }
+
+      .job-source-badge.reddit {
+        background: linear-gradient(135deg, #ff4500, #ff6b35);
+      }
+
+      .job-content {
+        flex: 1;
+      }
+
+      .job-card:hover {
+        box-shadow: var(--shadow-lg);
+        border-color: var(--accent-light);
+        transform: translateY(-2px);
       }
 
       .job-title {
         font-size: 1.1rem;
         font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 0.75rem;
       }
 
       .meta {
         display: flex;
         flex-wrap: wrap;
-        gap: 0.6rem;
-        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
         font-size: 0.85rem;
-        color: var(--muted);
+        color: var(--text-secondary);
       }
 
       .pill {
         display: inline-flex;
         align-items: center;
-        padding: 0.25rem 0.65rem;
+        padding: 0.35rem 0.75rem;
+        background-color: var(--accent);
+        color: white;
         border-radius: 999px;
-        background: rgba(27, 95, 99, 0.12);
-        color: var(--accent-2);
-        font-weight: 600;
-        letter-spacing: 0.02em;
+        font-weight: 500;
+        font-size: 0.8rem;
       }
 
       .body {
         font-size: 0.95rem;
-        color: var(--ink);
-        line-height: 1.5;
+        color: var(--text-primary);
+        line-height: 1.6;
+        margin-bottom: 1rem;
         white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 120px;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
       }
 
       .phone {
         font-size: 0.9rem;
         font-weight: 600;
-        color: var(--accent-2);
+        color: var(--accent);
+        margin-bottom: 0.75rem;
       }
 
       .actions {
         display: flex;
-        gap: 1rem;
-        align-items: center;
+        gap: 0.75rem;
       }
 
       a {
-        color: var(--accent-2);
+        display: inline-flex;
+        align-items: center;
+        padding: 0.6rem 1rem;
+        background-color: var(--accent);
+        color: white;
         text-decoration: none;
-        font-weight: 600;
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
       }
 
       a:hover {
-        text-decoration: underline;
+        background-color: var(--accent-light);
+        transform: translateX(2px);
+      }
+
+      button {
+        padding: 0.75rem 1.5rem;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      button:hover {
+        background-color: var(--accent-light);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-lg);
       }
 
       .empty {
-        color: var(--muted);
-        font-size: 1rem;
-        padding: 2rem 0 1rem;
+        text-align: center;
+        padding: 3rem 1.5rem;
+        color: var(--text-secondary);
       }
 
-      @keyframes float-in {
-        from {
-          opacity: 0;
-          transform: translateY(18px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @keyframes card-in {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @media (max-width: 900px) {
-        .hero {
-          padding: 2rem;
+      @media (max-width: 768px) {
+        h1 {
+          font-size: 1.5rem;
         }
 
         .controls {
           grid-template-columns: 1fr;
         }
+
+        .header-stats {
+          gap: 1.5rem;
+        }
+
+        .job-card {
+          padding: 1rem;
+        }
       }
     </style>
   </head>
   <body>
-    <div class="page">
-      <header class="hero">
-        <div class="hero__badge">Live feed</div>
-        <h1>Reddit Job Pulse</h1>
-        <p class="subtitle">
-          Curated from active job subreddits and arranged in a clean, searchable feed.
-        </p>
-        <div class="hero__meta">
+    <header>
+      <div class="header-content">
+        <h1>Job Opportunities</h1>
+        <p class="subtitle">Discover jobs from Reddit, Telegram, and more in one place</p>
+        <div class="header-stats">
           <div class="stat">
-            <span class="stat__label">Jobs</span>
-            <span id="jobCount" class="stat__value">0</span>
+            <span class="stat-value" id="jobCount">0</span>
+            <span class="stat-label">Total Jobs</span>
           </div>
           <div class="stat">
-            <span class="stat__label">Subreddits</span>
-            <span id="subCount" class="stat__value">0</span>
+            <span class="stat-value" id="subCount">0</span>
+            <span class="stat-label">Sources</span>
           </div>
-          <button id="refreshBtn" class="btn">Refresh feed</button>
         </div>
-      </header>
+      </div>
+    </header>
 
+    <div class="page">
       <section class="controls">
-        <label class="control">
-          Search
-          <input id="searchInput" type="search" placeholder="Role, keyword, or company" />
-        </label>
-        <label class="control">
-          Subreddit
+        <div class="control">
+          <label>Search</label>
+          <input id="searchInput" type="search" placeholder="Find a role or keyword..." />
+        </div>
+        <div class="control">
+          <label>Source</label>
           <select id="subFilter">
-            <option value="">All</option>
+            <option value="">All Sources</option>
           </select>
-        </label>
-        <label class="control">
-          Sort
+        </div>
+        <div class="control">
+          <label>Time Filter</label>
+          <select id="timeFilter">
+            <option value="">All Time</option>
+            <option value="24h">Last 24 Hours</option>
+          </select>
+        </div>
+        <div class="control">
+          <label>Sort</label>
           <select id="sortSelect">
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
           </select>
-        </label>
+        </div>
       </section>
 
       <div id="jobs" class="jobs"></div>
       <div id="emptyState" class="empty" style="display: none;">
-        No jobs yet. Run the scraper, then refresh the feed.
+        No jobs found. Try adjusting your filters.
       </div>
     </div>
 
     <script>
       const jobsContainer = document.getElementById('jobs');
       const emptyState = document.getElementById('emptyState');
-      const refreshBtn = document.getElementById('refreshBtn');
       const subFilter = document.getElementById('subFilter');
       const searchInput = document.getElementById('searchInput');
       const sortSelect = document.getElementById('sortSelect');
+      const timeFilter = document.getElementById('timeFilter');
       const jobCount = document.getElementById('jobCount');
       const subCount = document.getElementById('subCount');
 
       let allJobs = [];
 
       async function fetchJobs() {
-        const res = await fetch('/api/jobs');
-        const data = await res.json();
-        allJobs = Array.isArray(data) ? data : [];
-        populateFilter();
-        renderJobs();
+        try {
+          const res = await fetch('/api/jobs');
+          const data = await res.json();
+          allJobs = Array.isArray(data) ? data : [];
+          populateFilter();
+          renderJobs();
+        } catch (err) {
+          console.error('Error fetching jobs:', err);
+        }
       }
 
       function populateFilter() {
         const subs = [...new Set(allJobs.map((j) => j.subreddit).filter(Boolean))].sort();
-        subFilter.innerHTML =
-          '<option value="">All</option>' +
-          subs.map((s) => `<option value="${s}">${s}</option>`).join('');
+        const currentValue = subFilter.value;
+        subFilter.innerHTML = '<option value="">All Sources</option>' +
+          subs.map((s) => `<option value="${s}">${formatSource(s)}</option>`).join('');
+        subFilter.value = currentValue;
         subCount.textContent = String(subs.length);
+      }
+
+      function formatSource(source) {
+        if (source.startsWith('telegram/')) {
+          return '📱 ' + source.replace('telegram/', '');
+        }
+        return '🔗 ' + source;
       }
 
       function normalize(text) {
         return (text || '').toLowerCase();
       }
 
-      function getDomain(url) {
-        if (!url) return '';
-        try {
-          return new URL(url).hostname.replace(/^www\./, '');
-        } catch (err) {
-          return '';
-        }
-      }
-
       function renderJobs() {
         const filterSub = subFilter.value;
         const query = normalize(searchInput.value);
         const sortOrder = sortSelect.value;
+        const timeFilterValue = timeFilter.value;
         let jobs = allJobs.slice();
+
+        // Remove duplicates based on title
+        const seen = new Set();
+        jobs = jobs.filter((job) => {
+          const key = normalize(job.title || '');
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
 
         if (filterSub) {
           jobs = jobs.filter((j) => j.subreddit === filterSub);
@@ -367,6 +417,16 @@
               normalize(j.title).includes(query) ||
               normalize(j.body).includes(query)
             );
+          });
+        }
+
+        // Filter by time
+        if (timeFilterValue === '24h') {
+          const now = Date.now();
+          const oneDayMs = 24 * 60 * 60 * 1000;
+          jobs = jobs.filter((j) => {
+            const jobDate = new Date(j.createdAt || 0).getTime();
+            return (now - jobDate) <= oneDayMs;
           });
         }
 
@@ -385,10 +445,20 @@
           emptyState.style.display = 'none';
         }
 
-        jobs.forEach((job, index) => {
+        jobs.forEach((job) => {
           const card = document.createElement('div');
           card.className = 'job-card';
-          card.style.animationDelay = `${index * 40}ms`;
+
+          // Source Badge
+          const sourceBadge = document.createElement('div');
+          const isReddit = !job.subreddit || !job.subreddit.includes('telegram');
+          const sourceType = isReddit ? 'reddit' : 'telegram';
+          sourceBadge.className = `job-source-badge ${sourceType}`;
+          sourceBadge.textContent = isReddit ? 'Reddit' : 'Telegram';
+
+          // Content wrapper
+          const content = document.createElement('div');
+          content.className = 'job-content';
 
           const title = document.createElement('div');
           title.className = 'job-title';
@@ -396,31 +466,23 @@
 
           const meta = document.createElement('div');
           meta.className = 'meta';
-          const created = job.createdAt
-            ? new Date(job.createdAt).toLocaleString()
-            : '';
-          const subreddit = document.createElement('span');
-          subreddit.className = 'pill';
-          subreddit.textContent = job.subreddit || 'unknown';
 
-          const source = document.createElement('span');
-          source.textContent = getDomain(job.url) || 'reddit.com';
-
+          const created = job.createdAt ? new Date(job.createdAt).toLocaleDateString() : '';
           const time = document.createElement('span');
           time.textContent = created;
+          time.style.fontSize = '0.85rem';
+          time.style.color = 'var(--text-secondary)';
 
-          meta.appendChild(subreddit);
-          meta.appendChild(source);
           if (created) meta.appendChild(time);
 
           const body = document.createElement('div');
           body.className = 'body';
-          const snippet = (job.body || '').trim().slice(0, 320);
-          body.textContent = snippet ? `${snippet}${snippet.length >= 320 ? '...' : ''}` : '';
+          const snippet = (job.body || '').trim().slice(0, 280);
+          body.textContent = snippet ? `${snippet}${snippet.length >= 280 ? '...' : ''}` : '';
 
           const phone = document.createElement('div');
           phone.className = 'phone';
-          phone.textContent = job.phone ? `Phone: ${job.phone}` : '';
+          phone.textContent = job.phone ? `☎️  ${job.phone}` : '';
 
           const actions = document.createElement('div');
           actions.className = 'actions';
@@ -429,26 +491,30 @@
           link.href = job.permalink || job.url || '#';
           link.target = '_blank';
           link.rel = 'noopener noreferrer';
-          link.textContent = 'View on Reddit';
+          link.textContent = 'View Details →';
 
           actions.appendChild(link);
 
-          card.appendChild(title);
-          card.appendChild(meta);
-          if (job.phone) card.appendChild(phone);
-          if (job.body) card.appendChild(body);
-          card.appendChild(actions);
+          content.appendChild(title);
+          content.appendChild(meta);
+          if (job.body) content.appendChild(body);
+          if (job.phone) content.appendChild(phone);
+          content.appendChild(actions);
+
+          card.appendChild(sourceBadge);
+          card.appendChild(content);
 
           jobsContainer.appendChild(card);
         });
       }
 
-      refreshBtn.addEventListener('click', fetchJobs);
       subFilter.addEventListener('change', renderJobs);
       sortSelect.addEventListener('change', renderJobs);
+      timeFilter.addEventListener('change', renderJobs);
       searchInput.addEventListener('input', renderJobs);
 
       fetchJobs();
+      setInterval(fetchJobs, 30000);
     </script>
   </body>
 </html>

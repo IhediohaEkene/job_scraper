@@ -21,13 +21,47 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false },
 });
 
+// Initialize database schema
+async function initializeDatabase() {
+  try {
+    console.log('Initializing database schema...');
+    
+    // Create table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS jobs (
+        id BIGSERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        subreddit TEXT NOT NULL,
+        permalink TEXT NOT NULL,
+        url TEXT NOT NULL,
+        phone TEXT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        source TEXT DEFAULT 'reddit',
+        source_id TEXT
+      );
+    `);
+    console.log('✅ Jobs table ready');
+    
+    // Add missing columns if they don't exist
+    await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'reddit'`);
+    await pool.query(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS source_id TEXT`);
+    console.log('✅ Database schema migrations applied');
+  } catch (err) {
+    console.error('❌ Database initialization error:', err);
+    process.exit(1);
+  }
+}
+
 pool
   .query('SELECT 1')
-  .then(() => {
+  .then(async () => {
     console.log('Connected to Postgres');
+    await initializeDatabase();
   })
   .catch((err) => {
     console.error('Postgres connection error:', err);
+    process.exit(1);
   });
 
 // Middlewares

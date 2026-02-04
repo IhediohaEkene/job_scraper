@@ -183,6 +183,10 @@ function isRecent(createdAt, maxAgeHours) {
   return ageMs <= maxAgeHours * 60 * 60 * 1000;
 }
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function fetchSubreddit(subreddit, { apiUrl, onJob, maxAgeHours }) {
   const url = `https://www.reddit.com/r/${subreddit}/new.json?limit=25`;
   console.log(`\n📥 Fetching ${url}`);
@@ -190,7 +194,7 @@ async function fetchSubreddit(subreddit, { apiUrl, onJob, maxAgeHours }) {
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'job-api-reddit-scraper/1.0',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
     });
     if (!res.ok) {
@@ -269,6 +273,8 @@ async function runScraper(options = {}) {
 
   for (const sub of subreddits) {
     await fetchSubreddit(sub, { apiUrl, onJob, maxAgeHours });
+    // Add 1 second delay between subreddit requests to avoid rate limiting
+    await delay(1000);
   }
 
   console.log('\n✅ Done. Jobs should now be in your database.');
